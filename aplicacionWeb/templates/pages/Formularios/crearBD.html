@@ -1,0 +1,62 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Agregar Base de Datos</h1>
+    <form id="crearBdForm" method="post" action="{% url 'crearBd' %}" class="was-validated">
+        {% csrf_token %}
+        <div class="row">
+            <div class="mb-3">
+                <label for="titulo" class="form-label">Nombre de la base de datos</label>
+                <input type="text" class="form-control" id="titulo" name="database_name" placeholder="Nombre de la base de datos" required/>
+            </div>
+            <div class="col-md-6">
+                <h3>MDF</h3>
+                <div class="mb-3">
+                    <label for="MDF" class="form-label">Nombre del archivo MDF</label>
+                    <input type="text" class="form-control" id="nombreMDF" name="mdf_name" placeholder="example.mdf" required/>
+                </div>
+                <div class="mb-3">
+                    <label for="carpetaMDF" class="form-label">Seleccione una carpeta para el archivo MDF:</label>
+                    <input type="text" id="carpetaMDF" class="form-control" name="mdf_file" placeholder="C:\example\" required>
+                </div>
+                <div class="mb-3">
+                    <label for="tamanoMDF" class="form-label">Seleccione el tamaño inicial del archivo MDF:</label>
+                    <input type="number" id="tamanoMDF" class="form-control" name="mdf_size" placeholder="25 MB" required>
+                </div>
+                <div class="mb-3">
+                    <label for="crecimientoMDF" class="form-label">Seleccione el crecimiento del archivo MDF:</label>
+                    <input type="number" id="crecimientoMDF" class="form-control" name="mdf_growth" placeholder="20%" required>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h3>Log</h3>
+                <div class="mb-3">
+                    <label for="nombreLOG" class="form-label">Nombre del archivo Log</label>
+                    <input type="text" class="form-control" id="nombreLOG" name="log_name" placeholder="example.log" required/>
+                </div>
+                <div class="mb-3">
+                    <label for="carpetaLog" class="form-label">Seleccione una carpeta para el archivo Log:</label>
+                    <input type="text" id="carpetaLog" class="form-control" name="log_file" placeholder="C:\example\" required>
+                </div>
+                <div class="mb-3">
+                    <label for="tamanoLog" class="form-label">Seleccione el tamaño inicial del archivo Log:</label>
+                    <input type="number" id="tamanoLog" class="form-control" name="log_size" placeholder="25 MB" required>
+                </div>
+                <div class="mb-3">
+                    <label for="crecimientoLog" class="form-label">Seleccione el crecimiento del archivo Log:</label>
+                    <input type="number" id="crecimientoLog" class="form-control" name="log_growth" placeholder="20%" required>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3" id="submitButton">Crear</button>
+    </form>
+</div>
+
+<script>
+    document.getElementById('crearBdForm').addEventListener('submit', function() {
+        document.getElementById('submitButton').disabled = true;
+        document.getElementById('submitButton').innerText = 'Enviando...';
+    });
+</script>
+{% endblock %}

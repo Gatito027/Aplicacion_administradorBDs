@@ -1,0 +1,20 @@
+{% extends 'layouts/base.html' %}
+{% block content %}
+{% load static %}
+
+<div class="container mt-5">
+    <div class="card text-center">
+        <div class="card-header bg-success text-white">
+            <h1>Resultado</h1>
+        </div>
+        <div class="card-body">
+            <p class="card-text">{{ message }}</p>
+            <a href="{% url 'crearBdView' %}" class="btn btn-primary">Crear otra base de datos</a>
+        </div>
+        <div class="card-footer text-muted">
+            Administrador de Base de Datos
+        </div>
+    </div>
+</div>
+{% endblock %}
+
