@@ -20,6 +20,7 @@ def ejecutarCreacion(request):
         mdf_growth = request.POST.get('mdf_growth')
         log_size = request.POST.get('log_size')
         log_growth = request.POST.get('log_growth')
+        secondary_filegroups = request.POST.get('secondary_filegroups')  # Filegroups secundarios (opcional)
 
         # Convertir a enteros si están presentes
         mdf_size = int(mdf_size) if mdf_size else None
@@ -34,8 +35,7 @@ def ejecutarCreacion(request):
                     DECLARE @ReturnCode INT;
                     EXEC @ReturnCode = createNewDataBase 
                         @DataBaseName=%s, @mdfName=%s, @mdfFile=%s,
-                        @logName=%s, @logFile=%s;
-                    SELECT @ReturnCode AS ReturnCode;
+                        @logName=%s, @logFile=%s
                 """
                 params = [database_name, mdf_name, mdf_file, log_name, log_file]
 
@@ -52,6 +52,9 @@ def ejecutarCreacion(request):
                 if log_growth is not None:
                     sql += ", @logGrowth=%s"
                     params.append(log_growth)
+                if secondary_filegroups:
+                    sql += ", @SecondaryFilegroups=%s"
+                    params.append(secondary_filegroups)
 
                 # Finalizar la consulta SQL
                 sql += "; SELECT @ReturnCode AS ReturnCode;"
