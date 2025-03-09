@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.db import connection
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 def crearBD(request):
@@ -84,3 +85,53 @@ def ejecutarCreacion(request):
 def mostrar_resultado(request, message):
     return render(request, 'pages/Messages/resultado.html', {'message': message})
 
+def getionUsuarios(request):
+    return render(request, 'pages/views/UsuariosInicio.html')
+
+def listaUsuarios(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("EXEC consultarLoginsUsuarios;")
+            usuarios = cursor.fetchall()
+        return render(request, 'pages/views/LoginsUsuarios.html', {'usuarios':usuarios})
+    except Exception as e:
+        return redirect('result_page', message='Ocurrio un error')
+
+def formularioLogin(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT name AS BaseDeDatos FROM sys.databases;")
+            resultado = cursor.fetchall()
+        return render(request, 'pages/Formularios/usuariosLoginsform.html', {'dbs':resultado})
+    except Exception as e:
+        return redirect('result_page', message='Ocurrio un error')
+
+@csrf_exempt
+def CrearLoginUsuarioView(request):
+    if request.method == 'POST':
+        loginName = request.POST.get('loginName')
+        loginPassword = request.POST.get('loginPassword')
+        usuarios = []
+        # Recoger todos los usuarios y bases de datos enviados
+        i = 0
+        while True:
+            userName = request.POST.get(f'userName{i}')
+            bd = request.POST.get(f'bd{i}')
+            if not userName or not bd:
+                break
+            usuarios.append((userName, bd))
+            i += 1
+
+        try:
+            # Ejecutar el procedimiento almacenado para cada usuario
+            for userName, bd in usuarios:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "EXEC CrearLoginYUsuario @loginName=%s, @loginPassword=%s, @userName=%s, @bd=%s",
+                        [loginName, loginPassword, userName, bd]
+                    )
+            return JsonResponse({'status': 'success', 'message': 'Login y usuarios creados exitosamente.'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)

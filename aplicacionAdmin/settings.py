@@ -79,8 +79,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'mssql',
         'NAME': 'AdminBD',
-        'USER': 'sa',
-        'PASSWORD': 'mimiau',
+        'USER': 'superadmin',
+        'PASSWORD': 'P@ssw0rd123',
         'HOST': 'localhost',
         'PORT': '',
         'OPTIONS': {'driver':'ODBC Driver 17 for SQL Server'}

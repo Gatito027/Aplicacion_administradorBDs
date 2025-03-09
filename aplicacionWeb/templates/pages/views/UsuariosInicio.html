@@ -1,0 +1,98 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Bienvenido</h1>
+    <h4>Esta aplicación permite:</h4>
+    <div class="row">
+        <div class="col-md-4 col-sm-6 mb-4">
+            <a class="text-decoration-none" href="{% url 'listaUsuarios' %}">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title">Gestión de Logins y Usuarios</h4>
+                        <p class="card-text">1- Creación de logins y usuarios.</p>
+                        <p class="card-text">2- Lista de logins y usuarios existentes.</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 col-sm-6 mb-4">
+            <a class="text-decoration-none" href="#">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title">Asignación de Permisos</h4>
+                        <p class="card-text">1- Selección de permisos para usuarios en tablas y esquemas específicos.
+                        </p>
+                        <p class="card-text">2- Asignar o revocar permisos.</p>
+                        <p class="card-text">3- Lista de usuarios y sus permisos asignados.</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 col-sm-6 mb-4">
+            <a class="text-decoration-none" href="#">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title">Gestión de Roles</h4>
+                        <p class="card-text">1- Creación de roles personalizados en la base de datos.</p>
+                        <p class="card-text">2- Asignación de usuarios a roles existentes.</p>
+                        <p class="card-text">3- Lista de roles y los usuarios asignados a cada uno.</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 col-sm-6 mb-4">
+            <a class="text-decoration-none" href="#">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title">Historial de Operaciones</h4>
+                        <p class="card-text">1- Registro de las acciones realizadas</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+</div>
+
+<style scoped>
+    .container {
+        max-width: 960px;
+    }
+
+    .card-title {
+        font-size: 1.5rem;
+        color: #333;
+    }
+
+    .card-text {
+        font-size: 1rem;
+    }
+
+    .card-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .card-img-top {
+        height: 250px;
+        object-fit: cover;
+    }
+
+    .text-muted {
+        color: #6c757d !important;
+    }
+
+    /* Estilos adicionales para el efecto hover */
+    .card:hover {
+        transform: scale(1.05);
+        transition: transform 0.2s;
+    }
+
+    .card:hover .card-title {
+        color: #007bff;
+    }
+</style>
+{% endblock %}

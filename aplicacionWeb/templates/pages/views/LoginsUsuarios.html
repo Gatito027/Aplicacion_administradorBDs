@@ -1,0 +1,26 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-3">
+    <h2>Gestión de Logins y Usuarios</h2>
+    <a href="{% url 'formularioLogin' %}" class="btn btn-primary">Crear un nuevo login</a>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Base de datos</th>
+          <th>Login</th>
+          <th>Usuario</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for usuario in usuarios %}
+        <tr>
+          <td>{{usuario.0}}</td>
+          <td>{{usuario.1}}</td>
+          <td>{{usuario.2}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

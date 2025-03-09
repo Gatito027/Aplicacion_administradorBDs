@@ -1,0 +1,207 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-3">
+    <h2>Crear login</h2>
+    <form id="crearLoginForm" method="post" action="{% url 'ejecutarCrearUsuario' %}" class="was-validated">
+        {% csrf_token %}
+        <div class="row">
+            <div class="mb-3">
+                <label for="loginName" class="form-label">Nombre del Login</label>
+                <input type="text" class="form-control" id="loginName" name="loginName" placeholder="Nombre del login" required/>
+            </div>
+            <div class="mb-3">
+                <label for="loginPassword" class="form-label">Contraseña del Login</label>
+                <input type="password" class="form-control" id="loginPassword" name="loginPassword" placeholder="Contraseña" required/>
+            </div>
+        </div>
+        <!-- Botón para abrir el modal de Agregar usuarios -->
+        <button type="button" class="btn btn-secondary mb-3" data-bs-toggle="modal" data-bs-target="#usuariosModal">
+            Agregar usuarios
+        </button>
+
+        <!-- Área para mostrar los usuarios agregados -->
+        <div id="usuariosList" class="mb-3"></div>
+
+        <!-- Botón de enviar formulario -->
+        <button type="submit" class="btn btn-primary mt-3" id="submitButton">Crear</button>
+    </form>
+</div>
+
+<!-- Modal para agregar/editar usuarios -->
+<div class="modal fade" id="usuariosModal" tabindex="-1" aria-labelledby="usuariosModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="usuariosModalLabel">Agregar/Editar Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="usuarioForm">
+                    <div class="mb-3">
+                        <label for="usuario" class="form-label">Nombre del usuario</label>
+                        <input type="text" class="form-control" id="usuario" placeholder="Nombre usuario" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bd" class="form-label">Base de datos</label>
+                        <select class="form-select" id="bd">
+                            {% for db in dbs %}
+                            <option value="{{ db.0 }}">{{ db.0 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para mostrar mensajes -->
+<div class="modal fade" id="mensajeModal" tabindex="-1" aria-labelledby="mensajeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mensajeModalLabel">Mensaje</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="mensajeModalBody">
+                <!-- Mensaje de éxito o error se mostrará aquí -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Declarar la variable usuarios en el ámbito global
+    let usuarios = [];
+    let indiceEdicion = null; // Para almacenar el índice del usuario que se está editando
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const usuariosList = document.getElementById('usuariosList');
+        const usuarioForm = document.getElementById('usuarioForm');
+        const crearLoginForm = document.getElementById('crearLoginForm');
+        const submitButton = document.getElementById('submitButton');
+
+        // Agregar o editar usuario desde el modal
+        usuarioForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const usuarioInput = document.getElementById('usuario');
+            const bdSelect = document.getElementById('bd');
+            const usuarioName = usuarioInput.value;
+            const bdName = bdSelect.value;
+
+            if (usuarioName && bdName) {
+                if (indiceEdicion !== null) {
+                    // Editar usuario existente
+                    usuarios[indiceEdicion] = { name: usuarioName, bd: bdName };
+                    indiceEdicion = null; // Restablecer el índice de edición
+                } else {
+                    // Agregar nuevo usuario
+                    usuarios.push({ name: usuarioName, bd: bdName });
+                }
+                actualizarListaUsuarios();
+                usuarioInput.value = ''; // Limpiar el campo de usuario
+                $('#usuariosModal').modal('hide'); // Cerrar el modal
+            }
+        });
+
+        // Enviar formulario principal
+        crearLoginForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            submitButton.disabled = true;
+            submitButton.textContent = 'Enviando...';
+
+            // Crear FormData para enviar los datos
+            const formData = new FormData(crearLoginForm);
+            usuarios.forEach((usuario, index) => {
+                formData.append(`userName${index}`, usuario.name);
+                formData.append(`bd${index}`, usuario.bd);
+            });
+
+            // Enviar datos a la vista de Django
+            fetch(crearLoginForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')  // Incluir el token CSRF
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    mostrarMensaje('Éxito', data.message);
+                    // Limpiar el formulario y la lista de usuarios
+                    crearLoginForm.reset();
+                    usuarios = [];
+                    actualizarListaUsuarios();
+                } else {
+                    mostrarMensaje('Error', data.message);
+                }
+            })
+            .catch(error => {
+                mostrarMensaje('Error', 'Ocurrió un error al enviar el formulario.');
+            })
+            .finally(() => {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Crear';
+            });
+        });
+    });
+
+    // Función global para actualizar la lista de usuarios
+    window.actualizarListaUsuarios = function() {
+        const usuariosList = document.getElementById('usuariosList');
+        usuariosList.innerHTML = '';
+        usuarios.forEach((usuario, index) => {
+            const usuarioDiv = document.createElement('div');
+            usuarioDiv.className = 'mb-2';
+            usuarioDiv.innerHTML = `
+                <div class="input-group">
+                    <input type="text" class="form-control" value="${usuario.name} (${usuario.bd})" readonly>
+                    <button type="button" class="btn btn-warning" onclick="editarUsuario(${index})">Editar</button>
+                    <button type="button" class="btn btn-danger" onclick="eliminarUsuario(${index})">Eliminar</button>
+                </div>
+            `;
+            usuariosList.appendChild(usuarioDiv);
+        });
+    };
+
+    // Función global para editar un usuario
+    window.editarUsuario = function(index) {
+        const usuario = usuarios[index];
+        const usuarioInput = document.getElementById('usuario');
+        const bdSelect = document.getElementById('bd');
+
+        // Llenar el modal con los datos del usuario
+        usuarioInput.value = usuario.name;
+        bdSelect.value = usuario.bd;
+
+        // Guardar el índice del usuario que se está editando
+        indiceEdicion = index;
+
+        // Abrir el modal
+        $('#usuariosModal').modal('show');
+    };
+
+    // Función global para eliminar un usuario
+    window.eliminarUsuario = function(index) {
+        if (confirm('¿Está seguro de eliminar este usuario?')) {
+            usuarios.splice(index, 1);
+            actualizarListaUsuarios();
+        }
+    };
+
+    // Función global para mostrar mensajes
+    window.mostrarMensaje = function(titulo, mensaje) {
+        const mensajeModalBody = document.getElementById('mensajeModalBody');
+        mensajeModalBody.innerHTML = `<strong>${titulo}:</strong> ${mensaje}`;
+        $('#mensajeModal').modal('show');
+    };
+</script>
+{% endblock %}
