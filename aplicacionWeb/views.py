@@ -202,3 +202,103 @@ def asignar_permisos(request):
 
     # Si no es POST, redirigir con mensaje de error
     return redirect('result_page', message='Ocurrió un error')
+
+def listaRoles(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("EXEC sp_ObtenerRolesYUsuarios;")
+            response = cursor.fetchall()
+        return render(request, 'pages/views/roles.html', {'roles':response})
+    except Exception as e:
+        return redirect('result_page', message='Ocurrio un error')
+
+def formularioRol(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT name AS BaseDeDatos FROM sys.databases;")
+            resultado = cursor.fetchall()
+        return render(request, 'pages/Formularios/crearRolForm.html', {'dbs':resultado})
+    except Exception as e:
+        return redirect('result_page', message='Ocurrio un error')
+
+def crear_rol(request):
+    if request.method == 'POST':
+        # Obtener los datos del formulario
+        base_datos = request.POST.get('bd')
+        nombre_rol = request.POST.get('rol_name')
+        permisos = request.POST.getlist('permisos')  # Lista de permisos seleccionados
+
+        # Convertir la lista de permisos a una cadena separada por comas
+        permisos_str = ','.join(permisos)
+
+        # Llamar al procedimiento almacenado usando EXEC
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                        "EXEC CrearRolConPermisos @base_datos=%s, @nombre_rol=%s, @permisos=%s",
+                        [base_datos, nombre_rol, permisos_str]
+                    )
+            return JsonResponse({'status': 'success', 'message': 'Rol creado exitosamente'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    # Si no es POST, renderizar el formulario
+    return redirect('result_page', message='Ocurrio un error')
+
+def asignarRol(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT name AS BaseDeDatos FROM sys.databases;")
+            resultado = cursor.fetchall()
+        return render(request, 'pages/Formularios/asignarRolForm.html', {'dbs':resultado})
+    except Exception as e:
+        return redirect('result_page', message='Ocurrio un error')
+
+def obtenerRoles(request):
+    if request.method == 'GET':
+        base_datos = request.GET.get('bd')
+        try:
+            with connection.cursor() as cursor:
+                # Ejecutar el procedimiento almacenado para obtener los roles
+                cursor.execute('EXEC sp_ObtenerRolesDeBD @DatabaseName = %s;', [base_datos])
+                resultado = cursor.fetchall()
+                # Extraer el nombre del rol de los resultados
+                roles = [row[0] for row in resultado]
+                return JsonResponse({'roles': roles})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+def obtenerUsuarios(request):
+    if request.method == 'GET':
+        base_datos = request.GET.get('bd')
+        try:
+            with connection.cursor() as cursor:
+                # Ejecutar el procedimiento almacenado para obtener los usuarios
+                cursor.execute('EXEC sp_ObtenerUsuariosDeBD @DatabaseName = %s;', [base_datos])
+                resultado = cursor.fetchall()
+                # Extraer el nombre del usuario de los resultados
+                usuarios = [row[0] for row in resultado]
+                return JsonResponse({'usuarios': usuarios})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+def asignar_rol_a_usuario(request):
+    if request.method == 'POST':
+        # Obtener los datos del formulario
+        base_datos = request.POST.get('bd')
+        nombre_rol = request.POST.get('rol')
+        nombre_usuario = request.POST.get('usuario')
+        #print(base_datos, nombre_rol, nombre_usuario)
+
+        # Llamar al procedimiento almacenado usando EXEC
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute('EXEC AsignarRolAUsuario @base_datos=%s, @nombre_rol=%s, @nombre_usuario=%s', [base_datos, nombre_rol, nombre_usuario])
+            return JsonResponse({'status': 'success', 'message': 'Rol asignado exitosamente'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    # Si no es POST, renderizar el formulario
+    return redirect('result_page', message='Ocurrio un error')

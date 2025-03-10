@@ -1,0 +1,24 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-3">
+    <h2>Gestión de Roles</h2>
+    <a href="{% url 'formularioRol' %}" class="btn btn-primary">Creacion de Rol</a>
+    <a href="{% url 'asignarRol' %}" class="btn btn-info">Asignar rol</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Rol</th>
+                <th>Usuario</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rol in roles %}
+            <tr>
+                <td>{{rol.0}}</td>
+                <td>{{rol.1}}</td>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

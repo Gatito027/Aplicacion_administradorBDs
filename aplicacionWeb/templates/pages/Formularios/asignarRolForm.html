@@ -1,0 +1,138 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title mb-4 text-center">Asignar Rol</h2>
+            <form action="{% url 'asignar_rol_a_usuario' %}" method="post" id="formularioPermisosForm" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="bd" class="form-label">Base de Datos</label>
+                    <select class="form-select" id="bd" name="bd" required>
+                        <option value="" disabled selected>Selecciona una base de datos</option>
+                        {% for db in dbs %}
+                        <option value="{{ db.0 }}">{{ db.0 }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">
+                        Por favor, selecciona una base de datos.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="rol" class="form-label">Rol</label>
+                    <select class="form-select" id="rol" name="rol" required>
+                        <option value="" disabled selected>Selecciona un rol</option>
+                    </select>
+                    <div class="invalid-feedback">
+                        Por favor, selecciona un rol.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="usuario" class="form-label">Usuario</label>
+                    <select class="form-select" id="usuario" name="usuario" required>
+                        <option value="" disabled selected>Selecciona un usuario</option>
+                    </select>
+                    <div class="invalid-feedback">
+                        Por favor, selecciona un usuario.
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">Asignar Rol</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bdSelect = document.getElementById('bd');
+    const rolSelect = document.getElementById('rol');
+    const usuarioSelect = document.getElementById('usuario');
+
+    bdSelect.addEventListener('change', function() {
+        const bd = bdSelect.value;
+
+        const fetchData = async (url, dataKey, selectElement) => {
+            try {
+                const response = await fetch(`${url}?bd=${encodeURIComponent(bd)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+                const data = await response.json();
+                if (Array.isArray(data[dataKey])) {
+                    // Limpiar el select antes de agregar nuevas opciones
+                    selectElement.innerHTML = `<option value="" disabled selected>Selecciona un ${dataKey.slice(0, -1)}</option>`;
+                    data[dataKey].forEach(item => {
+                        const option = document.createElement('option');
+                        if (Array.isArray(item)) {
+                            option.value = item[0]; // Asignar el valor del primer elemento de la tupla
+                            option.textContent = item[0]; // Mostrar el primer elemento de la tupla
+                        } else {
+                            option.value = item; // Asignar el valor directamente si es una cadena
+                            option.textContent = item; // Mostrar el valor directamente si es una cadena
+                        }
+                        selectElement.appendChild(option);
+                    });
+                } else {
+                    console.error(`Expected an array for ${dataKey}, but got:`, data[dataKey]);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+
+        // Obtener Roles
+        fetchData("{% url 'obtenerRoles' %}", 'roles', rolSelect);
+
+        // Obtener Usuarios
+        fetchData("{% url 'obtenerUsuarios' %}", 'usuarios', usuarioSelect);
+    });
+
+    // Enviar el formulario por AJAX
+    const formulario = document.getElementById('formularioPermisosForm');
+    formulario.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        if (!formulario.checkValidity()) {
+            event.stopPropagation();
+            formulario.classList.add('was-validated');
+            return;
+        }
+
+        const formData = new FormData(formulario);
+
+        fetch(formulario.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(data.message);
+                formulario.reset();  // Limpiar el formulario
+                formulario.classList.remove('was-validated');
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error al enviar el formulario');
+        });
+    });
+});
+
+</script>
+{% endblock %}

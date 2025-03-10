@@ -13,4 +13,11 @@ urlpatterns = [
     path('listapermisos', views.listaPermisos, name='listaPermisos'),
     path('formularioPermisos/<str:bd>', views.formularioPermisos,name='formularioPermisos'),
     path('asignar-permisos/', views.asignar_permisos, name='asignar_permisos'),
+    path('listaroles', views.listaRoles, name='listaRoles'),
+    path('formularioRol', views.formularioRol, name='formularioRol'),
+    path('crear-rol/', views.crear_rol, name='crear_rol'),
+    path('asignarRol', views.asignarRol, name='asignarRol'),
+    path('obtenerRoles', views.obtenerRoles, name='obtenerRoles'),
+    path('obtenerUsuarios', views.obtenerUsuarios, name='obtenerUsuarios'),
+    path('asignar-rol-a-usuario/', views.asignar_rol_a_usuario, name='asignar_rol_a_usuario'),
 ]
