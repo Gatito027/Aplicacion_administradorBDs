@@ -1,0 +1,144 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Asignación de Permisos</h2>
+    <form action="{% url 'asignar_permisos' %}" method="post" id="formularioPermisosForm" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="usuario" class="form-label">Usuario</label>
+                <select class="form-select" id="usuario" name="usuario" required>
+                    <option value="" disabled selected>Selecciona un usuario</option>
+                    {% for usuario in usuarios %}
+                    <option value="{{ usuario.0 }}">{{ usuario.0 }}</option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback">
+                    Por favor, selecciona un usuario.
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label for="tipo" class="form-label">Tipo</label>
+                <select class="form-select" id="tipo" name="tipo" required>
+                    <option value="" disabled selected>Selecciona un tipo</option>
+                    <option value="Tabla">Tabla</option>
+                    <option value="Esquema">Esquema</option>
+                </select>
+                <div class="invalid-feedback">
+                    Por favor, selecciona un tipo.
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3" id="divEsquemas" style="display: none;">
+            <label for="esquemas" class="form-label">Esquemas</label>
+            <select class="form-select" id="esquemas" name="esquemas">
+                <option value="" disabled selected>Selecciona un esquema</option>
+                {% for esquema in esquemas %}
+                <option value="{{ esquema.1 }}">{{ esquema.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3" id="divTablas" style="display: none;">
+            <label for="tablas" class="form-label">Tablas</label>
+            <select class="form-select" id="tablas" name="tablas">
+                <option value="" disabled selected>Selecciona una tabla</option>
+                {% for tabla in tablas %}
+                <option value="{{ tabla.1 }}.{{ tabla.0 }}">{{ tabla.0 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="permisos" class="form-label">Permisos</label>
+            <div id="permisos">
+                <div class="form-check form-check-inline">
+                    <input type="checkbox" class="form-check-input" id="select" name="permisos" value="SELECT">
+                    <label class="form-check-label" for="select">SELECT</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input type="checkbox" class="form-check-input" id="insert" name="permisos" value="INSERT">
+                    <label class="form-check-label" for="insert">INSERT</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input type="checkbox" class="form-check-input" id="update" name="permisos" value="UPDATE">
+                    <label class="form-check-label" for="update">UPDATE</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input type="checkbox" class="form-check-input" id="delete" name="permisos" value="DELETE">
+                    <label class="form-check-label" for="delete">DELETE</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input type="checkbox" class="form-check-input" id="execute" name="permisos" value="EXECUTE">
+                    <label class="form-check-label" for="execute">EXECUTE</label>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Cambiar permisos</button>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoSelect = document.getElementById('tipo');
+        const divEsquemas = document.getElementById('divEsquemas');
+        const divTablas = document.getElementById('divTablas');
+        
+        // Manejar la visibilidad de los selectores de esquemas y tablas
+        tipoSelect.addEventListener('change', function() {
+            if (tipoSelect.value === 'Esquema') {
+                divEsquemas.style.display = 'block';
+                divTablas.style.display = 'none';
+            } else if (tipoSelect.value === 'Tabla') {
+                divEsquemas.style.display = 'none';
+                divTablas.style.display = 'block';
+            }
+        });
+
+        // Inicializar la visibilidad de los divs según el valor inicial del select
+        if (tipoSelect.value === 'Esquema') {
+            divEsquemas.style.display = 'block';
+            divTablas.style.display = 'none';
+        } else if (tipoSelect.value === 'Tabla') {
+            divEsquemas.style.display = 'none';
+            divTablas.style.display = 'block';
+        }
+
+        // Enviar el formulario por AJAX
+        const formulario = document.getElementById('formularioPermisosForm');
+        formulario.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            if (!formulario.checkValidity()) {
+                event.stopPropagation();
+                formulario.classList.add('was-validated');
+                return;
+            }
+
+            const formData = new FormData(formulario);
+
+            fetch(formulario.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error al enviar el formulario');
+            });
+        });
+    });
+</script>
+{% endblock %}

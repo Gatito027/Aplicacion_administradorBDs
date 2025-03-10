@@ -135,3 +135,70 @@ def CrearLoginUsuarioView(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     else:
         return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+    
+def listaPermisos(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("EXEC sp_ObtenerUsuariosPermisos;")
+            response = cursor.fetchall()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT name AS BaseDeDatos FROM sys.databases;")
+            resultado = cursor.fetchall()
+        return render(request, 'pages/views/permisos.html', {'permisos':response, 'dbs':resultado})
+    except Exception as e:
+        print(e)
+        return redirect('result_page', message='Ocurrio un error')
+    
+def formularioPermisos(request, bd):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("EXEC sp_ObtenerUsuariosDeBD @DatabaseName =%s ;", [bd])
+            usuarios = cursor.fetchall()
+        with connection.cursor() as cursor:
+            cursor.execute("exec sp_ObtenerEsquemasDeBD @DatabaseName=%s ;", [bd])
+            esquemas = cursor.fetchall()
+        with connection.cursor() as cursor:
+            cursor.execute("exec sp_ObtenerTablasDeBD @DatabaseName=%s ;", [bd])
+            tablas = cursor.fetchall()
+        return render(request, 'pages/Formularios/permisosForm.html', {'usuarios':usuarios,'esquemas':esquemas, 'tablas':tablas})
+    except Exception as e:
+        return redirect('result_page', message='Ocurrio un error')
+
+def asignar_permisos(request):
+    if request.method == 'POST':
+        # Obtener los datos del formulario
+        usuario = request.POST.get('usuario')
+        tipo = request.POST.get('tipo')
+        esquema = request.POST.get('esquemas')
+        tabla = request.POST.get('tablas')
+        permisos = request.POST.getlist('permisos')  # Lista de permisos seleccionados
+
+        # Determinar el objeto y tipo de objeto
+        if tipo == 'Esquema':
+            objeto = esquema
+            tipo_objeto = 'SCHEMA'
+        elif tipo == 'Tabla':
+            objeto = tabla
+            tipo_objeto = 'TABLE'
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Tipo de objeto no válido'}, status=400)
+
+        # Llamar al procedimiento almacenado para cada permiso
+        try:
+            with connection.cursor() as cursor:
+                for permiso in permisos:
+                    # Asignar el permiso
+                    cursor.execute('EXEC AsignarRevocarPermisos %s, %s, %s, %s, %s', [usuario, permiso, 'GRANT', objeto, tipo_objeto])
+
+                # Revocar permisos no seleccionados
+                todos_los_permisos = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'EXECUTE']
+                permisos_no_seleccionados = set(todos_los_permisos) - set(permisos)
+                for permiso in permisos_no_seleccionados:
+                    cursor.execute('EXEC AsignarRevocarPermisos %s, %s, %s, %s, %s', [usuario, permiso, 'REVOKE', objeto, tipo_objeto])
+
+            return JsonResponse({'status': 'success', 'message': 'Permisos actualizados correctamente'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    # Si no es POST, redirigir con mensaje de error
+    return redirect('result_page', message='Ocurrió un error')

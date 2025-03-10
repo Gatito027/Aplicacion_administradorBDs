@@ -1,0 +1,51 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-3">
+    <h2>Asignación de Permisos</h2>
+    <form action="{% url 'formularioPermisos' bd='base_de_datos' %}" method="get" id="formularioPermisosForm">
+        <div class="mb-3">
+            <label for="bd" class="form-label">Base de datos</label>
+            <select class="form-select" id="bd" name="bd">
+                {% for db in dbs %}
+                <option value="{{ db.0 }}">{{ db.0 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Cambiar permisos</button>
+    </form>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Base de datos</th>
+          <th>Usuario</th>
+          <th>Permiso</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for permiso in permisos %}
+        <tr>
+          <td>{{permiso.0}}</td>
+          <td>{{permiso.1}}</td>
+          <td>{{permiso.3}}</td>
+          <td>{{permiso.4}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const formularioPermisosForm = document.getElementById('formularioPermisosForm');
+          formularioPermisosForm.addEventListener('submit', function(event) {
+              event.preventDefault();
+              const selectBD = document.getElementById('bd');
+              const selectedValue = selectBD.options[selectBD.selectedIndex].value;
+              // Redirigir al usuario a la URL con el parámetro
+              window.location.href = '{% url "formularioPermisos" "base_de_datos_placeholder" %}'.replace('base_de_datos_placeholder', selectedValue);
+          });
+      });
+  </script>
+{% endblock %}
