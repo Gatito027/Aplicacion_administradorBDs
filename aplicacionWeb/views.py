@@ -302,3 +302,47 @@ def asignar_rol_a_usuario(request):
 
     # Si no es POST, renderizar el formulario
     return redirect('result_page', message='Ocurrio un error')
+
+def historialOperaciones(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("select * from historialOperaciones;")
+            response = cursor.fetchall()
+        return render(request, 'pages/views/hitorialOperaciones.html',{'operaciones':response} )
+    except Exception as e:
+        return redirect('result_page', message='Ocurrio un error')
+    
+def obtenerTodasOperaciones(request):
+    if request.method == 'GET':
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute('select * from historialOperaciones;')
+                resultado = cursor.fetchall()
+                return JsonResponse({'operaciones': resultado})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+def obtenerFitroTipoOperaciones(request):
+    if request.method == 'GET':
+        filtro = request.GET.get('filtro')
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute('select * from historialOperaciones where operacion= %s;', [filtro])
+                resultado = cursor.fetchall()
+                return JsonResponse({'operaciones': resultado})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+def obtenerFitroFechaOperaciones(request):
+    if request.method == 'GET':
+        filtro = request.GET.get('fecha')
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute('select * from historialOperaciones where fecha = %s;', [filtro])
+                resultado = cursor.fetchall()
+                return JsonResponse({'operaciones': resultado})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)

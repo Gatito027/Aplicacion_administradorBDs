@@ -1,0 +1,101 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Historial de operaciones</h2>
+    <form id="filtros-form" class="row g-3 mb-4" action="" method="get">
+        <div class="col-md-6">
+            <label for="filtro-operacion" class="form-label">Filtrar por operacion</label>
+            <select name="filtro-operacion" id="filtro-operacion" class="form-select">
+                <option value="">Todos</option>
+                <option value="Creación de login">Creación de login</option>
+                <option value="Creación de usuario">Creación de usuario</option>
+                <option value="Asignar permisos">Asignar permisos</option>
+                <option value="Creación de rol">Creación de rol</option>
+                <option value="Asignación de rol">Asignación de rol</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label for="filtro-fecha" class="form-label">Filtrar por fecha</label>
+            <input type="date" name="filtro-fecha" id="filtro-fecha" class="form-control">
+        </div>
+    </form>
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Operacion</th>
+                <th>Detalles</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody id="tabla-operaciones">
+            {% for operacion in operaciones %}
+            <tr>
+                <td>{{ operacion.0 }}</td>
+                <td>{{ operacion.1 }}</td>
+                <td>{{ operacion.2 }}</td>
+                <td>{{ operacion.3 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('filtros-form');
+    const filtroOperacion = document.getElementById('filtro-operacion');
+    const filtroFecha = document.getElementById('filtro-fecha');
+    const tablaOperaciones = document.getElementById('tabla-operaciones');
+
+    const actualizarTabla = (data) => {
+        // Limpiar la tabla
+        tablaOperaciones.innerHTML = '';
+        // Agregar las filas con los datos nuevos
+        data.forEach(operacion => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${operacion[0]}</td>
+                <td>${operacion[1]}</td>
+                <td>${operacion[2]}</td>
+                <td>${operacion[3]}</td>
+            `;
+            tablaOperaciones.appendChild(row);
+        });
+    };
+
+    const fetchData = async (url) => {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`);
+            }
+            const data = await response.json();
+            if (data.operaciones) {
+                actualizarTabla(data.operaciones);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+
+    form.addEventListener('change', function() {
+        let url = "{% url 'obtenerTodasOperaciones' %}";
+        const operacion = filtroOperacion.value;
+        const fecha = filtroFecha.value;
+
+        if (operacion) {
+            url = "{% url 'obtenerFitroTipoOperaciones' %}?filtro=" + encodeURIComponent(operacion);
+        } else if (fecha) {
+            url = "{% url 'obtenerFitroFechaOperaciones' %}?fecha=" + encodeURIComponent(fecha);
+        }
+
+        fetchData(url);
+    });
+
+    // Fetch initial data
+    fetchData("{% url 'obtenerTodasOperaciones' %}");
+});
+</script>
+{% endblock %}

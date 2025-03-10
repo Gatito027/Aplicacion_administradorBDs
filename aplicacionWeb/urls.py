@@ -20,4 +20,8 @@ urlpatterns = [
     path('obtenerRoles', views.obtenerRoles, name='obtenerRoles'),
     path('obtenerUsuarios', views.obtenerUsuarios, name='obtenerUsuarios'),
     path('asignar-rol-a-usuario/', views.asignar_rol_a_usuario, name='asignar_rol_a_usuario'),
+    path('historialOperaciones', views.historialOperaciones, name='historialOperaciones'),
+    path('obtenerTodasOperaciones', views.obtenerTodasOperaciones, name='obtenerTodasOperaciones'),
+    path('obtenerFitroTipoOperaciones', views.obtenerFitroTipoOperaciones, name='obtenerFitroTipoOperaciones'),
+    path('obtenerFitroFechaOperaciones', views.obtenerFitroFechaOperaciones, name='obtenerFitroFechaOperaciones'),
 ]
