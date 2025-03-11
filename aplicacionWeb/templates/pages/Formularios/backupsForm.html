@@ -1,0 +1,83 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Crear backups</h1>
+    <form id="crearBdForm" method="post" action="{% url 'crear_backup' %}" class="was-validated">
+        {% csrf_token %}
+        <div class="row">
+            <label for="bd" class="form-label">Base de datos</label>
+            <select class="form-select" id="bd" name="bd" required>
+                {% for db in dbs %}
+                <option value="{{ db.0 }}">{{ db.0 }}</option>
+                {% endfor %}
+            </select>
+            <div class="mb-3">
+                <label for="titulo" class="form-label">Nombre del archivo</label>
+                <input type="text" class="form-control" id="titulo" name="name" placeholder="algo.bac" required/>
+            </div>
+            <div class="mb-3">
+                <label for="carpetaMDF" class="form-label">Seleccione una carpeta para el archivo:</label>
+                <input type="text" id="carpeta" class="form-control" name="file" placeholder="C:\example" required>
+            </div>
+            <label for="bd" class="form-label">Tipo</label>
+            <select class="form-select" id="tipo" name="tipo" required>
+                <option value="completo">Completo</option>
+                <option value="diferencial">Diferencial</option>
+                <option value="log">De logs</option>
+            </select>
+        </div>
+
+        <!-- Botón de enviar formulario -->
+        <button type="submit" class="btn btn-primary mt-3" id="submitButton">Crear</button>
+    </form>
+</div>
+
+<!-- Modal de éxito -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="successModalLabel">Éxito</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="successMessage">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('crearBdForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const submitButton = document.getElementById('submitButton');
+    submitButton.disabled = true;
+
+    const formData = new FormData(this);
+    fetch("{% url 'crear_backup' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.mensaje) {
+            document.getElementById('successMessage').innerText = data.mensaje;
+            new bootstrap.Modal(document.getElementById('successModal')).show();
+            // Limpiar el formulario
+            document.getElementById('crearBdForm').reset();
+            submitButton.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        submitButton.disabled = false;
+    });
+});
+</script>
+{% endblock %}

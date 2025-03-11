@@ -24,4 +24,7 @@ urlpatterns = [
     path('obtenerTodasOperaciones', views.obtenerTodasOperaciones, name='obtenerTodasOperaciones'),
     path('obtenerFitroTipoOperaciones', views.obtenerFitroTipoOperaciones, name='obtenerFitroTipoOperaciones'),
     path('obtenerFitroFechaOperaciones', views.obtenerFitroFechaOperaciones, name='obtenerFitroFechaOperaciones'),
+    path('backupsForm', views.backupsForm, name='backupsForm'),
+    path('crear_backup', views.crear_backup, name='crear_backup'),
+    path('listaBd', views.listaBd, name='listaBd'),
 ]

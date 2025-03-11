@@ -32,6 +32,9 @@
                     <li class="nav-item">
                       <a class="nav-link" aria-current="page" href="{% url 'crearBdView' %}">Crear una BD</a>
                     </li>
+                    <li class="nav-item">
+                      <a class="nav-link" aria-current="page" href="{% url 'listaBd' %}">Lista de BDs</a>
+                    </li>
                     <li class="nav-item dropdown">
                       <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         Administración y creacion de usuarios
@@ -48,7 +51,7 @@
                       </ul>
                     </li>
                     <li class="nav-item">
-                      <a class="nav-link" href="#">Backups</a>
+                      <a class="nav-link" href="{% url 'backupsForm' %}">Backups</a>
                     </li>
                   </ul>
                 </div>

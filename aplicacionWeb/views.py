@@ -346,3 +346,39 @@ def obtenerFitroFechaOperaciones(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+def backupsForm(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT name AS BaseDeDatos FROM sys.databases;")
+            resultado = cursor.fetchall()
+        return render(request, 'pages/Formularios/backupsForm.html', {'dbs':resultado})
+    except Exception as e:
+        print(e)
+        return redirect('result_page', message='Ocurrio un error')
+
+def crear_backup(request):
+    if request.method == 'POST':
+        bd = request.POST['bd']
+        name = request.POST['name']
+        file = request.POST['file']
+        tipo = request.POST['tipo']
+        print(bd, name, file, tipo)
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("EXEC sp_CrearBackup @NombreBaseDatos = %s, @NombreArchivo = %s, @Ubicacion = %s,@TipoBackup = %s", 
+                    [bd, name, file, tipo])
+            return JsonResponse({"mensaje": "Backup creado exitosamente"}, status=200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    # Obtener lista de bases de datos (esto dependerá de cómo obtienes las bases de datos)
+    return redirect('result_page', message='Ocurrio un error')
+
+def listaBd(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT name AS BaseDeDatos FROM sys.databases;")
+            resultado = cursor.fetchall()
+        return render(request, 'pages/views/listaBds.html', {'dbs':resultado})
+    except Exception as e:
+        return redirect('result_page', message='Ocurrio un error')
