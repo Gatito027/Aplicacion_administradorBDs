@@ -13,15 +13,11 @@
                 {% endfor %}
             </select>
             <div class="mb-3">
-                <label for="titulo" class="form-label">Nombre del archivo</label>
-                <input type="text" class="form-control" id="titulo" name="name" placeholder="algo.bac" required/>
-            </div>
-            <div class="mb-3">
                 <label for="carpetaMDF" class="form-label">Seleccione una carpeta para el archivo:</label>
                 <input type="text" id="carpeta" class="form-control" name="file" placeholder="C:\example" required>
             </div>
             <label for="bd" class="form-label">Tipo</label>
-            <select class="form-select" id="tipo" name="tipo" required>
+            <select class="form-select" id="tipo" name="tipo" disabled required>
                 <option value="completo">Completo</option>
                 <option value="diferencial">Diferencial</option>
                 <option value="log">De logs</option>

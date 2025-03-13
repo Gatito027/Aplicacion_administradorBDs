@@ -69,14 +69,18 @@ def ejecutarCreacion(request):
 
                 # Manejar el resultado según el código de retorno
                 if return_code == 0:
-                    return redirect('result_page', message='Base de datos creada exitosamente.')
+                    #return redirect('result_page', message='Base de datos creada exitosamente.')
+                    return JsonResponse({'status': 'success', 'message': 'Base de datos creada exitosamente.'})
                 elif return_code == 20:
-                    return redirect('result_page', message='La base de datos ya existe.')
+                    #return redirect('result_page', message='La base de datos ya existe.')
+                    return JsonResponse({'status': 'success', 'message': 'La base de datos ya existe.'})
                 else:
-                    return redirect('result_page', message='Error al crear la base de datos.')
+                    return JsonResponse({'status': 'success', 'message': 'Error al crear la base de datos.'})
+                    #return redirect('result_page', message='Error al crear la base de datos.')
         except Exception as e:
             # Manejar cualquier excepción que ocurra durante la ejecución
-            return redirect('result_page', message=f'Ocurrió un error: {str(e)}')
+            #return redirect('result_page', message=f'Ocurrió un error: {str(e)}')
+            return JsonResponse({'status': 'success', 'message': f'Ocurrió un error: {str(e)}'})
 
     # Redirigir si el método no es POST
     return redirect('result_page', message='Método de solicitud no válido.')
@@ -360,14 +364,15 @@ def backupsForm(request):
 def crear_backup(request):
     if request.method == 'POST':
         bd = request.POST['bd']
-        name = request.POST['name']
         file = request.POST['file']
-        tipo = request.POST['tipo']
-        print(bd, name, file, tipo)
+        tipo = 'completo'
+        #print(bd, file, tipo)
         try:
             with connection.cursor() as cursor:
-                cursor.execute("EXEC sp_CrearBackup @NombreBaseDatos = %s, @NombreArchivo = %s, @Ubicacion = %s,@TipoBackup = %s", 
-                    [bd, name, file, tipo])
+                cursor.execute("EXEC sp_CrearBackup @NombreBaseDatos = %s, @Ubicacion = %s,@TipoBackup = %s", 
+                    [bd, file, tipo])
+                resultado = cursor.fetchall()
+                #print(resultado)
             return JsonResponse({"mensaje": "Backup creado exitosamente"}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
@@ -377,7 +382,7 @@ def crear_backup(request):
 def listaBd(request):
     try:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT name AS BaseDeDatos FROM sys.databases;")
+            cursor.execute("SELECT name AS BaseDeDatos FROM sys.databases WHERE database_id > 4;")
             resultado = cursor.fetchall()
         return render(request, 'pages/views/listaBds.html', {'dbs':resultado})
     except Exception as e:

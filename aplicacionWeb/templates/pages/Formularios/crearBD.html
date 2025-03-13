@@ -3,6 +3,8 @@
 {% block content %}
 <div class="container mt-5">
     <h1 class="mb-4">Agregar Base de Datos</h1>
+    <!-- Área para mostrar la respuesta -->
+    <div id="responseMessage" class="mt-3"></div>
     <form id="crearBdForm" method="post" action="{% url 'crearBd' %}" class="was-validated">
         {% csrf_token %}
         <div class="row">
@@ -61,6 +63,8 @@
         <!-- Botón de enviar formulario -->
         <button type="submit" class="btn btn-primary mt-3" id="submitButton">Crear</button>
     </form>
+
+    
 </div>
 
 <!-- Modal para agregar filegroups -->
@@ -137,9 +141,42 @@
     }
 
     // Deshabilitar el botón de enviar mientras se procesa el formulario
-    document.getElementById('crearBdForm').addEventListener('submit', function() {
-        document.getElementById('submitButton').disabled = true;
-        document.getElementById('submitButton').innerText = 'Enviando...';
+    document.getElementById('crearBdForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevenir el envío tradicional del formulario
+
+        const formData = new FormData(this);
+        const submitButton = document.getElementById('submitButton');
+        submitButton.disabled = true;
+        submitButton.innerText = 'Enviando...';
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest', // Para identificar la solicitud como AJAX
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Mostrar la respuesta en el div correspondiente
+            const responseMessage = document.getElementById('responseMessage');
+            responseMessage.innerHTML = `<div class="alert alert-${data.status === 'success' ? 'success' : 'danger'}">${data.message}</div>`;
+
+            // Limpiar el formulario si la operación fue exitosa
+            if (data.status === 'success') {
+                document.getElementById('crearBdForm').reset();
+                filegroups = []; // Limpiar la lista de filegroups
+                renderFilegroups(); // Actualizar la lista en la interfaz
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('responseMessage').innerHTML = `<div class="alert alert-danger">Error al procesar la solicitud.</div>`;
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.innerText = 'Crear';
+        });
     });
 
     // Campo oculto para enviar los filegroups en el formulario
