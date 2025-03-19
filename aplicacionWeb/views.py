@@ -164,11 +164,11 @@ def formularioPermisos(request, bd):
         with connection.cursor() as cursor:
             cursor.execute("exec sp_ObtenerTablasDeBD @DatabaseName=%s ;", [bd])
             tablas = cursor.fetchall()
-        return render(request, 'pages/Formularios/permisosForm.html', {'usuarios':usuarios,'esquemas':esquemas, 'tablas':tablas})
+        return render(request, 'pages/Formularios/permisosForm.html', {'usuarios':usuarios,'esquemas':esquemas, 'tablas':tablas, 'bd':[bd], })
     except Exception as e:
         return redirect('result_page', message='Ocurrio un error')
 
-def asignar_permisos(request):
+def asignar_permisos(request, bd):
     if request.method == 'POST':
         # Obtener los datos del formulario
         usuario = request.POST.get('usuario')
@@ -176,6 +176,10 @@ def asignar_permisos(request):
         esquema = request.POST.get('esquemas')
         tabla = request.POST.get('tablas')
         permisos = request.POST.getlist('permisos')  # Lista de permisos seleccionados
+
+        # Validar que se haya seleccionado un usuario y un tipo
+        if not usuario or not tipo:
+            return JsonResponse({'status': 'error', 'message': 'Usuario y tipo son obligatorios'}, status=400)
 
         # Determinar el objeto y tipo de objeto
         if tipo == 'Esquema':
@@ -187,25 +191,37 @@ def asignar_permisos(request):
         else:
             return JsonResponse({'status': 'error', 'message': 'Tipo de objeto no válido'}, status=400)
 
-        # Llamar al procedimiento almacenado para cada permiso
+        # Validar que se haya seleccionado un objeto (esquema o tabla)
+        if not objeto:
+            return JsonResponse({'status': 'error', 'message': 'Debes seleccionar un esquema o una tabla'}, status=400)
+
+        # Validar que se haya seleccionado al menos un permiso
+        if not permisos:
+            return JsonResponse({'status': 'error', 'message': 'Debes seleccionar al menos un permiso'}, status=400)
+
+        # Convertir la lista de permisos en una cadena separada por comas
+        permisos_str = ','.join(permisos)
+
+        # Depuración: Imprimir los valores que se enviarán al SP
+        print(f"Valores enviados al SP: usuario={usuario}, permisos={permisos_str}, accion=GRANT, objeto={objeto}, tipo_objeto={tipo_objeto}, nombre_bd={bd}")
+
+        # Llamar al procedimiento almacenado
         try:
             with connection.cursor() as cursor:
-                for permiso in permisos:
-                    # Asignar el permiso
-                    cursor.execute('EXEC AsignarRevocarPermisos %s, %s, %s, %s, %s', [usuario, permiso, 'GRANT', objeto, tipo_objeto])
-
-                # Revocar permisos no seleccionados
+                cursor.execute(
+                    "EXEC AsignarRevocarPermisos @usuario=%s, @permisos=%s, @accion=%s, @objeto=%s, @tipo_objeto=%s, @nombre_bd=%s",
+                    [usuario, permisos_str, 'GRANT', objeto, tipo_objeto, bd]
+                )
                 todos_los_permisos = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'EXECUTE']
                 permisos_no_seleccionados = set(todos_los_permisos) - set(permisos)
                 for permiso in permisos_no_seleccionados:
-                    cursor.execute('EXEC AsignarRevocarPermisos %s, %s, %s, %s, %s', [usuario, permiso, 'REVOKE', objeto, tipo_objeto])
-
-            return JsonResponse({'status': 'success', 'message': 'Permisos actualizados correctamente'})
+                    cursor.execute('EXEC AsignarRevocarPermisos %s, %s, %s, %s, %s, %s', 
+                    [usuario, permiso, 'REVOKE', objeto, tipo_objeto, bd])
+                return JsonResponse({'status': 'success', 'message': 'Permisos asignados correctamente'})
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
-    # Si no es POST, redirigir con mensaje de error
-    return redirect('result_page', message='Ocurrió un error')
+            # Depuración: Imprimir el error
+            print(f"Error al ejecutar el procedimiento almacenado: {str(e)}")
+            return JsonResponse({'status': 'error', 'message': f'Error al ejecutar el procedimiento almacenado: {str(e)}'}, status=500)
 
 def listaRoles(request):
     try:
@@ -354,7 +370,7 @@ def obtenerFitroFechaOperaciones(request):
 def backupsForm(request):
     try:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT name AS BaseDeDatos FROM sys.databases;")
+            cursor.execute("SELECT name AS BaseDeDatos FROM sys.databases WHERE database_id > 4;")
             resultado = cursor.fetchall()
         return render(request, 'pages/Formularios/backupsForm.html', {'dbs':resultado})
     except Exception as e:
@@ -366,11 +382,14 @@ def crear_backup(request):
         bd = request.POST['bd']
         file = request.POST['file']
         tipo = 'completo'
-        #print(bd, file, tipo)
+        print(bd, file, tipo)
         try:
+            #with connection.cursor() as cursor:
+            #    sql = "BACKUP DATABASE [%s] TO DISK = '%s\\test.bak'" % (bd, file)
+            #    cursor.execute(sql)
             with connection.cursor() as cursor:
                 cursor.execute("EXEC sp_CrearBackup @NombreBaseDatos = %s, @Ubicacion = %s,@TipoBackup = %s", 
-                    [bd, file, tipo])
+                    [str(bd), str(file), str(tipo)])
                 resultado = cursor.fetchall()
                 #print(resultado)
             return JsonResponse({"mensaje": "Backup creado exitosamente"}, status=200)

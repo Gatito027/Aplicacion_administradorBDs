@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-5">
     <h2 class="mb-4">Asignación de Permisos</h2>
-    <form action="{% url 'asignar_permisos' %}" method="post" id="formularioPermisosForm" class="needs-validation" novalidate>
+    <form action="{% url 'asignar_permisos' bd=bd.0 %}" method="post" id="formularioPermisosForm" class="needs-validation" novalidate>
         {% csrf_token %}
         <div class="row mb-3">
             <div class="col-md-6">

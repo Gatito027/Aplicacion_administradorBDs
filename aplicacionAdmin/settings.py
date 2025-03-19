@@ -81,11 +81,14 @@ DATABASES = {
         'NAME': 'AdminBD',
         'USER': 'superadmin',
         'PASSWORD': 'P@ssw0rd123',
+        #'USER': 'sa',
+        #'PASSWORD': 'mimiau',
         'HOST': 'localhost',
         'PORT': '',
-        'OPTIONS': {'driver':'ODBC Driver 17 for SQL Server'}
+        'OPTIONS': {'driver': 'ODBC Driver 17 for SQL Server'}
     }
 }
+
 
 
 # Password validation
