@@ -1,2 +1,10 @@
-django==5.0.12
+asgiref==3.8.1
+Django==5.1.7
+django-mongodb-backend==5.1.0b1
+dnspython==2.7.0
 mssql-django==1.5
+pymongo==4.11.3
+pyodbc==5.2.0
+pytz==2025.1
+sqlparse==0.5.3
+tzdata==2025.1

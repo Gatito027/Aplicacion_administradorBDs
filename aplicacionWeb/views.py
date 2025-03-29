@@ -391,7 +391,7 @@ def crear_backup(request):
                 cursor.execute("EXEC sp_CrearBackup @NombreBaseDatos = %s, @Ubicacion = %s,@TipoBackup = %s", 
                     [str(bd), str(file), str(tipo)])
                 resultado = cursor.fetchall()
-                #print(resultado)
+                print(resultado)
             return JsonResponse({"mensaje": "Backup creado exitosamente"}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
