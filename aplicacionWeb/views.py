@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.db import connection
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+import requests
 
 # Create your views here.
 def crearBD(request):
@@ -406,3 +407,84 @@ def listaBd(request):
         return render(request, 'pages/views/listaBds.html', {'dbs':resultado})
     except Exception as e:
         return redirect('result_page', message='Ocurrio un error')
+    
+#!NoSQL
+# URL base para las solicitudes externas
+api = 'http://localhost:3000'
+
+def crearBDNoSQL(request):
+    try:
+        # Obtener las bases de datos mediante la función listabdNoSQL
+        bd = listabdNoSQL()
+        if isinstance(bd, dict) and "error" in bd:
+            # Si hubo un error, redirigir a una página de error con mensaje
+            return redirect('result_page', message=bd["error"])
+        # Renderizar la plantilla con los datos obtenidos
+        return render(request, 'pages/Formularios/CrearBDNoSQL.html', {'dbs': bd})
+    except Exception as e:
+        # Manejo de errores genéricos
+        return redirect('result_page', message=f'Error inesperado: {str(e)}')
+
+def listabdNoSQL():
+    try:
+        # Hacer la solicitud GET a la ruta externa
+        response = requests.get(f'{api}/list-dbs')
+
+        # Verificar si la solicitud fue exitosa
+        if response.status_code == 200:
+            # Obtener los datos de la respuesta
+            return response.json()  # Suponiendo que el endpoint retorna JSON
+        else:
+            # Manejar el caso de error
+            return {"error": f"Error en la solicitud: {response.status_code}"}
+    except requests.exceptions.RequestException as e:
+        # Manejar excepciones de la solicitud
+        return {"error": str(e)}
+
+def crearUnaNoSQL(request):
+    if request.method == 'POST':
+        bd_name = request.POST.get('database_name') 
+        if not bd_name:
+            # Manejar el caso en que no se proporcione un nombre de base de datos
+            return JsonResponse({"error": "El nombre de la base de datos es requerido."}, status=400)
+        try:
+            # Crear el JSON que se enviará en el cuerpo de la solicitud
+            payload = {"dbName": bd_name}
+            # Realizar la solicitud POST al endpoint
+            response = requests.post(f'{api}/create-db', json=payload)
+            if response.status_code == 200:
+                # Obtener los datos de la respuesta y retornarlos como JSON
+                return JsonResponse(response.json(), status=200)
+            else:
+                # Manejar el caso de error en la solicitud
+                return JsonResponse({"error": f"Error en la solicitud: {response.status_code}"}, status=response.status_code)
+        except requests.exceptions.RequestException as e:
+            # Manejar excepciones de la solicitud
+            return JsonResponse({"error": f"Excepción en la solicitud: {str(e)}"}, status=500)
+    else:
+        # Manejar el caso en que el método no sea POST
+        return JsonResponse({"error": "Método no permitido, se requiere POST."}, status=405)
+    
+def eliminarUnaNoSQL(request):
+    if request.method == 'POST':
+        bd_name = request.POST.get('database_name') 
+        if not bd_name:
+            # Manejar el caso en que no se proporcione un nombre de base de datos
+            return JsonResponse({"error": "El nombre de la base de datos es requerido."}, status=400)
+        try:
+            # Crear el JSON que se enviará en el cuerpo de la solicitud
+            payload = {"dbName": bd_name}
+            # Realizar la solicitud POST al endpoint
+            response = requests.post(f'{api}/delete-db', json=payload)
+            if response.status_code == 200:
+                # Obtener los datos de la respuesta y retornarlos como JSON
+                return JsonResponse(response.json(), status=200)
+            else:
+                # Manejar el caso de error en la solicitud
+                return JsonResponse({"error": f"Error en la solicitud: {response.status_code}"}, status=response.status_code)
+        except requests.exceptions.RequestException as e:
+            # Manejar excepciones de la solicitud
+            return JsonResponse({"error": f"Excepción en la solicitud: {str(e)}"}, status=500)
+    else:
+        # Manejar el caso en que el método no sea POST
+        return JsonResponse({"error": "Método no permitido, se requiere POST."}, status=405)

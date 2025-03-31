@@ -1,0 +1,120 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Agregar Base de Datos</h1>
+    <!-- Área para mostrar la respuesta -->
+    <div id="responseMessage" class="mt-3"></div>
+    <form id="crearBdForm" class="was-validated">
+        {% csrf_token %}
+        <div class="row">
+            <div class="mb-3">
+                <label for="titulo" class="form-label">Nombre de la base de datos</label>
+                <input type="text" class="form-control" id="titulo" name="database_name" placeholder="Nombre de la base de datos" required/>
+            </div>
+        </div>
+        <!-- Botón de enviar formulario -->
+        <button type="submit" class="btn btn-primary mt-3" id="submitButton">Crear</button>
+    </form>
+</div>
+<!-- Lista de bds -->
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Bases de datos realizadas</h1>
+    <div class="row">
+        {% for db in dbs %}
+        <div class="col-md-4 col-sm-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title">{{ db.name }}</h4>
+                    <button type="button" class="btn btn-danger delete-btn" data-dbname="{{ db.name }}">Eliminar</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('crearBdForm');
+        const responseMessage = document.getElementById('responseMessage');
+
+        // Función para mostrar mensajes
+        function showMessage(type, message) {
+            responseMessage.innerHTML = `
+                <div class="alert alert-${type}" role="alert">
+                    ${message}
+                </div>`;
+            
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        }
+
+        // Formulario de creación
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const databaseName = document.getElementById('titulo').value;
+
+            const formData = new FormData();
+            formData.append('database_name', databaseName);
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            fetch("{% url 'crearUnaNoSQL' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage('danger', data.error);
+                } else {
+                    showMessage('success', '¡Base de datos creada exitosamente!');
+                }
+            })
+            .catch(error => {
+                showMessage('danger', `Error en la solicitud: ${error.message}`);
+            });
+        });
+
+        // Botones de eliminación
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const dbName = this.getAttribute('data-dbname');
+                
+                // Confirmación antes de eliminar
+                if (confirm(`¿Estás seguro que deseas eliminar la base de datos "${dbName}"?`)) {
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    
+                    const formData = new FormData();
+                    formData.append('database_name', dbName);
+                    formData.append('csrfmiddlewaretoken', csrfToken);
+
+                    fetch("{% url 'eliminarUnaNoSQL' %}", {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": csrfToken
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            showMessage('danger', data.error);
+                        } else {
+                            showMessage('success', `¡Base de datos "${dbName}" eliminada exitosamente!`);
+                        }
+                    })
+                    .catch(error => {
+                        showMessage('danger', `Error al eliminar: ${error.message}`);
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

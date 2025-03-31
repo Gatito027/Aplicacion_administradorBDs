@@ -54,6 +54,20 @@
                     <li class="nav-item">
                       <a class="nav-link" href="{% url 'backupsForm' %}">Backups</a>
                     </li>
+                    <li class="nav-item dropdown">
+                      <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        No SQL (Mongo)
+                      </a>
+                      <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'crearBdNoSQL' %}">Base de datos</a></li>
+                        <li>
+                          <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="{% url 'listaUsuarios' %}">Roles y usuaros</a></li>
+                        <li><a class="dropdown-item" href="{% url 'listaPermisos' %}">Backups</a></li>
+                        <li><a class="dropdown-item" href="{% url 'listaRoles' %}">Exportar datos a CSV</a></li>
+                      </ul>
+                    </li>
                   </ul>
                 </div>
               </div>

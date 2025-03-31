@@ -27,4 +27,8 @@ urlpatterns = [
     path('backupsForm', views.backupsForm, name='backupsForm'),
     path('crear_backup', views.crear_backup, name='crear_backup'),
     path('listaBd', views.listaBd, name='listaBd'),
+    #!Aqui inicia las no relacionales
+    path('crearBdNoSQL', views.crearBDNoSQL, name='crearBdNoSQL'),
+    path('crearUnaNoSQL', views.crearUnaNoSQL, name='crearUnaNoSQL'),
+    path('eliminarUnaNoSQL', views.eliminarUnaNoSQL, name='eliminarUnaNoSQL'),
 ]
