@@ -488,3 +488,71 @@ def eliminarUnaNoSQL(request):
     else:
         # Manejar el caso en que el método no sea POST
         return JsonResponse({"error": "Método no permitido, se requiere POST."}, status=405)
+    
+def rolesBDNoSQL(request):
+    try:
+        bd = listabdNoSQL()
+        if isinstance(bd, dict) and "error" in bd:
+            # Si hubo un error, redirigir a una página de error con mensaje
+            return redirect('result_page', message=bd["error"])
+        roles = listaRolesNoSQL()
+        if isinstance(roles, dict) and "error" in roles:
+            # Si hubo un error, redirigir a una página de error con mensaje
+            return redirect('result_page', message=roles["error"])
+        # Renderizar la plantilla con los datos obtenidos
+        return render(request, 'pages/Formularios/RolesBDNoSQL.html', {"roles":roles, "dbs":bd})
+    except Exception as e:
+        # Manejo de errores genéricos
+        return redirect('result_page', message=f'Error inesperado: {str(e)}')
+    
+def listaRolesNoSQL():
+    try:
+        # Hacer la solicitud GET a la ruta externa
+        response = requests.get(f'{api}/list-roles')
+        # Verificar si la solicitud fue exitosa
+        if response.status_code == 200:
+            # Obtener los datos de la respuesta
+            return response.json()  # Suponiendo que el endpoint retorna JSON
+        else:
+            # Manejar el caso de error
+            return {"error": f"Error en la solicitud: {response.status_code}"}
+    except requests.exceptions.RequestException as e:
+        # Manejar excepciones de la solicitud
+        return {"error": str(e)}
+    
+def crearRolNoSQL(request):
+    if request.method == 'POST':
+        # Obtener los datos del formulario
+        rol_name = request.POST.get('rol_name')
+        database_name = request.POST.get('bd')
+        permisos_seleccionados = request.POST.getlist('permisos')  # Obtener permisos seleccionados
+        if not rol_name or not database_name or not permisos_seleccionados:
+            return JsonResponse({"error": "Todos los campos son requeridos (roleName, dbName, permissions)."}, status=400)
+        try:
+            # Construir la estructura de permisos en el formato requerido
+            permissions = [
+                {
+                    "resource": {
+                        "db": database_name,
+                        "collection": ""
+                    },
+                    "actions": permisos_seleccionados
+                }
+            ]
+            # Crear el JSON de la solicitud
+            payload = {
+                "roleName": rol_name,
+                "dbName": database_name,
+                "permissions": permissions
+            }
+            # Enviar la solicitud POST al endpoint
+            response = requests.post(f'{api}/create-role', json=payload)
+            if response.status_code == 200:
+                return JsonResponse(response.json(), status=200)
+            else:
+                return JsonResponse({"error": f"Error en la solicitud: {response.status_code}"}, status=response.status_code)
+
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": f"Excepción en la solicitud: {str(e)}"}, status=500)
+    else:
+        return JsonResponse({"error": "Método no permitido, se requiere POST."}, status=405)

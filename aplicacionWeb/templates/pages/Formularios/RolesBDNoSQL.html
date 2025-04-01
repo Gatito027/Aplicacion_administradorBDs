@@ -1,0 +1,253 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Crear un rol</h1>
+    <div id="responseMessage" class="mt-3"></div>
+    <form id="crearBdForm" class="was-validated" action="{% url 'crearRolNoSQL' %}" method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="rol" class="form-label">Nombre del rol</label>
+            <input type="text" class="form-control" id="rol" name="rol_name" placeholder="Nombre del rol" required/>
+        </div>
+
+        <!-- Área para ingresar bases de datos y permisos -->
+        <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#bdModal">
+            Agregar Base de Datos
+        </button>
+        <div id="bdList" class="mb-3"></div>
+
+        <button type="submit" class="btn btn-primary mt-3" id="submitButton">Crear</button>
+    </form>
+</div>
+
+<!-- Lista de bds -->
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Roles creados</h1>
+    <div class="row">
+        {% for rol in roles %}
+        <div class="col-md-4 col-sm-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title">{{ rol.roleName }}</h4>
+                    <p>Base de datos: {{ rol.database }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal fade" id="bdModal" tabindex="-1" aria-labelledby="bdModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bdModalLabel">Agregar Base de Datos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="bd" class="form-label">Base de datos</label>
+                    <select class="form-select" id="bd" name="bd" required>
+                        {% for db in dbs %}
+                        <option value="{{ db.name }}">{{ db.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="permisos" class="form-label">Permisos</label>
+                    <div id="permisos">
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" id="find" name="permisos" value="find">
+                            <label class="form-check-label" for="find">Find</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" id="insert" name="permisos" value="insert">
+                            <label class="form-check-label" for="insert">Insert</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" id="update" name="permisos" value="update">
+                            <label class="form-check-label" for="update">Update</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" id="remove" name="permisos" value="remove">
+                            <label class="form-check-label" for="remove">Remove</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" id="createCollection" name="permisos" value="createCollection">
+                            <label class="form-check-label" for="createCollection">Crear Collection</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" id="dropCollection" name="permisos" value="dropCollection">
+                            <label class="form-check-label" for="dropCollection">Eliminar Collection</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="saveDatabaseButton">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById("crearBdForm").addEventListener("submit", function(event) {
+    event.preventDefault(); // Evita la recarga de la página
+
+    const rolName = document.getElementById('rol').value;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Obtener todas las bases de datos y permisos agregados
+    let databases = [];
+    let allPermissions = [];
+    
+    document.querySelectorAll("#bdList div").forEach(bdDiv => {
+        let dbName = bdDiv.querySelector('input[name="database[]"]').value;
+        let permisos = bdDiv.querySelector('input[name="permission[]"]').value.split(",");
+        
+        databases.push(dbName);
+        allPermissions = allPermissions.concat(permisos);
+        
+        // Para el endpoint actual, solo necesitamos la primera base de datos
+        if (databases.length === 1) {
+            database_name = dbName;
+            permisos_seleccionados = permisos;
+        }
+    });
+
+    if (!rolName || databases.length === 0) {
+        alert("Debes ingresar un nombre de rol y al menos una base de datos con permisos.");
+        return;
+    }
+
+    // Construir el payload según lo que espera el endpoint
+    let payload = {
+        "rol_name": rolName,
+        "bd": database_name,
+        "permisos": permisos_seleccionados
+    };
+
+    // Enviar como form-data en lugar de JSON
+    let formData = new FormData();
+    formData.append('rol_name', rolName);
+    formData.append('bd', database_name);
+    permisos_seleccionados.forEach(permiso => {
+        formData.append('permisos', permiso);
+    });
+
+    fetch(this.getAttribute("action"), {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken,
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        let responseMessage = document.getElementById("responseMessage");
+
+        if (data.error) {
+            responseMessage.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        } else {
+            responseMessage.innerHTML = `<div class="alert alert-success">¡Rol creado exitosamente!</div>`;
+            // Recargar la página después de 1.5 segundos para ver el nuevo rol
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        }
+    })
+    .catch(error => {
+        document.getElementById("responseMessage").innerHTML = 
+            `<div class="alert alert-danger">Error en la solicitud: ${error.message}</div>`;
+    });
+});
+
+document.getElementById("saveDatabaseButton").addEventListener("click", function() {
+    let bdName = document.getElementById("bd").value;
+    let permisosSeleccionados = [];
+    document.querySelectorAll("#permisos input:checked").forEach((permiso) => {
+        permisosSeleccionados.push(permiso.value);
+    });
+
+    let bdList = document.getElementById("bdList");
+
+    if (bdName.trim() !== "" && permisosSeleccionados.length > 0) {
+        let editingBd = document.getElementById("bdModal").getAttribute("data-editing");
+
+        if (editingBd) {
+            let bdDiv = document.querySelector(`[data-editing="true"]`);
+            bdDiv.innerHTML = `
+                <input type="hidden" name="database[]" value="${bdName}">
+                <input type="hidden" name="permission[]" value="${permisosSeleccionados.join(',')}">
+                <span class="me-2">${bdName} - ${permisosSeleccionados.join(', ')}</span>
+                <button type="button" class="btn btn-warning btn-sm editBdButton">Editar</button>
+                <button type="button" class="btn btn-danger btn-sm removeBdButton">Eliminar</button>
+            `;
+            bdDiv.removeAttribute("data-editing");
+        } else {
+            // Verificar si ya existe una base de datos (porque el endpoint actual solo acepta una)
+            if (document.querySelectorAll("#bdList div").length >= 1) {
+                alert("El endpoint actual solo soporta una base de datos por rol. Edita la existente si necesitas cambiarla.");
+                return;
+            }
+            
+            let bdDiv = document.createElement("div");
+            bdDiv.classList.add("mb-2", "d-flex", "align-items-center");
+            bdDiv.innerHTML = `
+                <input type="hidden" name="database[]" value="${bdName}">
+                <input type="hidden" name="permission[]" value="${permisosSeleccionados.join(',')}">
+                <span class="me-2">${bdName} - ${permisosSeleccionados.join(', ')}</span>
+                <button type="button" class="btn btn-warning btn-sm editBdButton">Editar</button>
+                <button type="button" class="btn btn-danger btn-sm removeBdButton">Eliminar</button>
+            `;
+
+            bdList.appendChild(bdDiv);
+        }
+
+        // Limpiar datos después de guardar
+        document.getElementById("bdModal").removeAttribute("data-editing");
+        document.getElementById("bd").value = "";
+        document.querySelectorAll("#permisos input").forEach((permiso) => (permiso.checked = false));
+
+        let modal = bootstrap.Modal.getInstance(document.getElementById('bdModal'));
+        modal.hide();
+    } else {
+        alert("Selecciona una base de datos y al menos un permiso.");
+    }
+});
+
+// Funcionalidad para editar bases de datos
+document.addEventListener("click", function(event) {
+    if (event.target.classList.contains("editBdButton")) {
+        let bdDiv = event.target.closest("div");
+        let bdName = bdDiv.querySelector('input[name="database[]"]').value;
+        let permisos = bdDiv.querySelector('input[name="permission[]"]').value.split(",");
+
+        // Cargar valores actuales al modal
+        document.getElementById("bd").value = bdName;
+        document.querySelectorAll("#permisos input").forEach((permiso) => {
+            permiso.checked = permisos.includes(permiso.value);
+        });
+
+        bdDiv.setAttribute("data-editing", "true"); // Indica que este elemento se está editando
+        document.getElementById("bdModal").setAttribute("data-editing", "true");
+
+        let modalInstance = new bootstrap.Modal(document.getElementById("bdModal"));
+        modalInstance.show();
+    }
+
+    if (event.target.classList.contains("removeBdButton")) {
+        event.target.closest("div").remove();
+    }
+});
+
+// Al cerrar el modal, limpiar los valores para evitar persistencia
+document.getElementById("bdModal").addEventListener("hidden.bs.modal", function () {
+    document.getElementById("bdModal").removeAttribute("data-editing");
+    document.getElementById("bd").value = "";
+    document.querySelectorAll("#permisos input").forEach((permiso) => (permiso.checked = false));
+});
+</script>
+{% endblock %}
