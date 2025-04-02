@@ -556,3 +556,99 @@ def crearRolNoSQL(request):
             return JsonResponse({"error": f"Excepción en la solicitud: {str(e)}"}, status=500)
     else:
         return JsonResponse({"error": "Método no permitido, se requiere POST."}, status=405)
+    
+def usuariosBDNoSQL(request):
+    try:
+        usuarios = listaUsuariosNoSQL()
+        if isinstance(usuarios, dict) and "error" in usuarios:
+            # Si hubo un error, redirigir a una página de error con mensaje
+            return redirect('result_page', message=usuarios["error"])
+        roles = listaRolesNoSQL()
+        if isinstance(roles, dict) and "error" in roles:
+            # Si hubo un error, redirigir a una página de error con mensaje
+            return redirect('result_page', message=roles["error"])
+        bd = listabdNoSQL()
+        if isinstance(bd, dict) and "error" in bd:
+            # Si hubo un error, redirigir a una página de error con mensaje
+            return redirect('result_page', message=bd["error"])
+        # Renderizar la plantilla con los datos obtenidos
+        return render(request, 'pages/Formularios/usuariosBDNoSQL.html', {"usuarios":usuarios, "roles":roles, "dbs":bd})
+    except Exception as e:
+        # Manejo de errores genéricos
+        return redirect('result_page', message=f'Error inesperado: {str(e)}')
+    
+def listaUsuariosNoSQL():
+    try:
+        # Hacer la solicitud GET a la ruta externa
+        response = requests.get(f'{api}/list-users-collection')
+        # Verificar si la solicitud fue exitosa
+        if response.status_code == 200:
+            # Obtener los datos de la respuesta
+            return response.json()  # Suponiendo que el endpoint retorna JSON
+        else:
+            # Manejar el caso de error
+            return {"error": f"Error en la solicitud: {response.status_code}"}
+    except requests.exceptions.RequestException as e:
+        # Manejar excepciones de la solicitud
+        return {"error": str(e)}
+
+def crearUsuarioNoSQL(request):
+    if request.method == 'POST':
+        # Obtener los datos del formulario
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        roles = []
+        
+        # Procesar los roles asignados
+        index = 0
+        while True:
+            role_key = f'roles[{index}][role]'
+            db_key = f'roles[{index}][db]'
+            
+            if role_key not in request.POST or db_key not in request.POST:
+                break
+                
+            roles.append({
+                "name": request.POST.get(role_key),
+                "db": request.POST.get(db_key)
+            })
+            index += 1
+
+        if not username or not password or not roles:
+            return JsonResponse({
+                "error": "Todos los campos son requeridos (username, password, roles)."
+            }, status=400)
+
+        try:
+            # Construir el payload en el formato requerido
+            payload = {
+                "dbName": roles[0]['db'],  # Tomamos la primera BD como principal
+                "username": username,
+                "password": password,
+                "roles": roles
+            }
+
+            # Enviar la solicitud POST al endpoint de MongoDB
+            response = requests.post(
+                f'{api}/create-user',
+                json=payload,
+                headers={'Content-Type': 'application/json'}
+            )
+
+            if response.status_code == 200:
+                return JsonResponse(response.json(), status=200)
+            else:
+                return JsonResponse({
+                    "error": f"Error en la solicitud a MongoDB: {response.status_code}",
+                    "details": response.text
+                }, status=response.status_code)
+
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({
+                "error": "Excepción en la conexión con MongoDB",
+                "details": str(e)
+            }, status=500)
+    else:
+        return JsonResponse({
+            "error": "Método no permitido, se requiere POST."
+        }, status=405)

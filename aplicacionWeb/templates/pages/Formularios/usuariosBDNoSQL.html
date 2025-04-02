@@ -1,0 +1,168 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Crear un Usuario</h1>
+    <div id="responseMessage" class="mt-3"></div>
+    <form id="crearUsuarioForm" class="was-validated" action="{% url 'crearUsuarioNoSQL' %}" method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="username" class="form-label">Nombre del usuario</label>
+            <input type="text" class="form-control" id="username" name="username" placeholder="Nombre de usuario" required/>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Contraseña del usuario</label>
+            <input type="password" class="form-control" id="password" name="password" placeholder="Contraseña" required/>
+        </div>
+
+        <!-- Área para asignar roles -->
+        <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#rolesModal">
+            Asignar Roles
+        </button>
+        <div id="rolesList" class="mb-3"></div>
+
+        <button type="submit" class="btn btn-primary mt-3" id="submitButton">Crear Usuario</button>
+    </form>
+</div>
+
+<!-- Lista de usuarios existentes -->
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Usuarios creados</h1>
+    <div class="row">
+        {% for usuario in usuarios %}
+        <div class="col-md-4 col-sm-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title">{{ usuario.user }}</h4>
+                    <p>Roles: 
+                        {% for rol in usuario.roles %} 
+                        <span class="badge bg-primary">{{ rol.role }}@{{ rol.db }}</span>
+                        {% endfor %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal para asignar roles -->
+<div class="modal fade" id="rolesModal" tabindex="-1" aria-labelledby="rolesModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rolesModalLabel">Asignar Roles</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="database" class="form-label">Base de datos</label>
+                    <select class="form-select" id="database" name="database" required>
+                        {% for db in dbs %}
+                        <option value="{{ db.name }}">{{ db.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="role" class="form-label">Rol a asignar</label>
+                    <select class="form-select" id="role" name="role" required>
+                        {% for rol in roles %}
+                        <option value="{{ rol.roleName }}">{{ rol.roleName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="saveRoleButton">Agregar Rol</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById("crearUsuarioForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+    
+    // Validación básica
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const rolesCount = document.querySelectorAll('#rolesList div').length;
+    const responseMessage = document.getElementById("responseMessage");
+
+    if (!username || !password || rolesCount === 0) {
+        responseMessage.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Debes ingresar nombre de usuario, contraseña y al menos un rol.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>`;
+        return;
+    }
+
+    // Crear objeto FormData para enviar los datos correctamente
+    const formData = new FormData(this);
+
+    try {
+        const response = await fetch(this.action, {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            responseMessage.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                ${data.error}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`;
+        } else {
+            responseMessage.innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">
+                ¡Usuario creado exitosamente!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`;
+            
+            setTimeout(() => window.location.reload(), 2000);
+        }
+    } catch (error) {
+        responseMessage.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Error en la conexión: ${error.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>`;
+    }
+});
+
+document.getElementById("saveRoleButton").addEventListener("click", function() {
+    let dbName = document.getElementById("database").value;
+    let roleName = document.getElementById("role").value;
+    let rolesList = document.getElementById("rolesList");
+    let roleIndex = document.querySelectorAll('#rolesList div').length;
+
+    if (dbName && roleName) {
+        let roleDiv = document.createElement("div");
+        roleDiv.classList.add("mb-2", "d-flex", "align-items-center");
+        roleDiv.innerHTML = `
+            <input type="hidden" name="roles[${roleIndex}][db]" value="${dbName}">
+            <input type="hidden" name="roles[${roleIndex}][role]" value="${roleName}">
+            <span class="me-2">${dbName} - ${roleName}</span>
+            <button type="button" class="btn btn-danger btn-sm removeRoleButton">Eliminar</button>
+        `;
+        
+        rolesList.appendChild(roleDiv);
+        bootstrap.Modal.getInstance(document.getElementById('rolesModal')).hide();
+    } else {
+        alert("Selecciona una base de datos y un rol.");
+    }
+});
+
+// Funcionalidad para eliminar roles
+document.addEventListener("click", function(event) {
+    if (event.target.classList.contains("removeRoleButton")) {
+        event.target.closest("div").remove();
+        // Reindexar los roles restantes
+        document.querySelectorAll('#rolesList div').forEach((div, index) => {
+            div.querySelector('input[name^="roles["]').name = `roles[${index}][db]`;
+            div.querySelector('input[name*="][role]"]').name = `roles[${index}][role]`;
+        });
+    }
+});
+</script>
+{% endblock %}

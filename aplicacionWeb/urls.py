@@ -32,5 +32,7 @@ urlpatterns = [
     path('crearUnaNoSQL', views.crearUnaNoSQL, name='crearUnaNoSQL'),
     path('eliminarUnaNoSQL', views.eliminarUnaNoSQL, name='eliminarUnaNoSQL'),
     path('rolesBDNoSQL', views.rolesBDNoSQL, name='rolesBDNoSQL'),
-    path('crearRolNoSQL', views.crearRolNoSQL, name='crearRolNoSQL')
+    path('crearRolNoSQL', views.crearRolNoSQL, name='crearRolNoSQL'),
+    path('usuariosBDNoSQL', views.usuariosBDNoSQL, name='usuariosBDNoSQL'),
+    path('crearUsuarioNoSQL', views.crearUsuarioNoSQL, name='crearUsuarioNoSQL'),
 ]
