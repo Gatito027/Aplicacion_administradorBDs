@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  apache:
+    build: .
+    container_name: django-apache
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    #volumes:
+    #  - /home/daniel/backups/aplicacion:/var/www/django_app
