@@ -730,7 +730,7 @@ def exportarEjecutarNoSQL(request):
         bd = request.POST.get('bd')
         colecciones = request.POST.get('colecciones')
 
-        if not bd:
+        if not bd or not colecciones:
             return JsonResponse({
                 "success": False,
                 "error": "PARAMS_MISSING",
@@ -827,3 +827,57 @@ def listaColeccionesNoSQL(request, db_name):
 
     except requests.exceptions.RequestException as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+def importarBDNoSQL(request):
+    try:
+        # Obtener las bases de datos mediante la función listabdNoSQL
+        bd = listabdNoSQL()
+        if isinstance(bd, dict) and "error" in bd:
+            # Si hubo un error, redirigir a una página de error con mensaje
+            return redirect('result_page', message=bd["error"])
+        # Renderizar la plantilla con los datos obtenidos
+        return render(request, 'pages/Formularios/importNoSQL.html', {'dbs': bd})
+    except Exception as e:
+        # Manejo de errores genéricos
+        return redirect('result_page', message=f'Error inesperado: {str(e)}')
+
+def crearImportNoSQL(request):
+    if request.method == 'POST':
+        # Obtener los datos del formulario
+        bd = request.POST.get('bd')
+        file = request.FILES.get('file')
+
+        if not bd or not file:
+            return JsonResponse({
+                "error": "Todos los campos son requeridos (Base de datos y Archivo)."
+            }, status=400)
+
+        try:
+            # Preparar los datos y archivos para la solicitud
+            files = {'backupFile': file}
+            data = {'dbName': bd}
+
+            # Enviar la solicitud POST al endpoint de MongoDB
+            response = requests.post(
+                f'{api}/import-db',
+                data=data,
+                files=files
+            )
+
+            if response.status_code == 200:
+                return JsonResponse(response.json(), status=200)
+            else:
+                return JsonResponse({
+                    "error": f"Error en la solicitud a MongoDB: {response.status_code}",
+                    "details": response.text
+                }, status=response.status_code)
+
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({
+                "error": "Excepción en la conexión con MongoDB",
+                "details": str(e)
+            }, status=500)
+    else:
+        return JsonResponse({
+            "error": "Método no permitido, se requiere POST."
+        }, status=405)

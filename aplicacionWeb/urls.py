@@ -40,4 +40,6 @@ urlpatterns = [
     path('exportarBDNoSQL', views.exportarBDNoSQL, name='exportarBDNoSQL'),
     path('exportarEjecutarNoSQL', views.exportarEjecutarNoSQL, name='exportarEjecutarNoSQL'),
     path('listaColeccionesNoSQL/<str:db_name>', views.listaColeccionesNoSQL, name='listaColeccionesNoSQL'),
+    path('importarBDNoSQL', views.importarBDNoSQL, name='importarBDNoSQL'),
+    path('crearImportNoSQL', views.crearImportNoSQL, name='crearImportNoSQL'),
 ]

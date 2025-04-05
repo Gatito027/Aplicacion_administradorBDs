@@ -1,0 +1,129 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <!-- Contenedor para mensajes de respuesta -->
+    <div id="responseMessage" class="alert d-none mt-3"></div>
+    
+    <h1 class="mb-4 text-center">Exportar Base de Datos</h1>
+    
+    <div class="card shadow p-4">
+        <form id="importForm" method="post" action="{% url 'crearImportNoSQL' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="bd" class="form-label fw-bold">Base de datos</label>
+                <select class="form-select" id="bd" name="bd" required onchange="cargarColecciones()">
+                    <option value="" selected disabled>Selecciona una base de datos</option>
+                    {% for db in dbs %}
+                    <option value="{{ db.name }}">{{ db.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="file" class="form-label fw-bold">Archivo</label>
+                <input type="file" id="file" name="file" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100" id="submitBtn">
+                <span id="submitText">Importar</span>
+                <span id="submitSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('importForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const submitSpinner = document.getElementById('submitSpinner');
+    const responseMessage = document.getElementById('responseMessage');
+    
+    // Mostrar spinner y deshabilitar botón
+    submitText.textContent = 'Procesando...';
+    submitSpinner.classList.remove('d-none');
+    submitBtn.disabled = true;
+    
+    // Limpiar mensajes anteriores
+    responseMessage.classList.add('d-none');
+    responseMessage.textContent = '';
+    
+    // Crear FormData
+    const formData = new FormData(form);
+    
+    // Enviar por AJAX
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Mostrar mensaje de éxito o error
+        responseMessage.classList.remove('d-none');
+        responseMessage.classList.remove('alert-success', 'alert-danger');
+        
+        if (data.success) {
+            responseMessage.classList.add('alert-success');
+            responseMessage.innerHTML = `
+                <strong>¡Éxito!</strong> ${data.message}
+                <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+        } else {
+            responseMessage.classList.add('alert-danger');
+            let errorDetails = '';
+            if (data.details) {
+                errorDetails = `<div class="mt-2"><small>Detalles: ${JSON.stringify(data.details)}</small></div>`;
+            }
+            responseMessage.innerHTML = `
+                <strong>Error:</strong> ${data.message || 'Error desconocido'}
+                ${errorDetails}
+                <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+        }
+        
+        // Opcional: Resetear el formulario si fue exitoso
+        if (data.success) {
+            form.reset();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        responseMessage.classList.remove('d-none');
+        responseMessage.classList.remove('alert-success', 'alert-danger');
+        responseMessage.classList.add('alert-danger');
+        responseMessage.innerHTML = `
+            <strong>Error:</strong> ${error.message || 'Error en la conexión'}
+            <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+    })
+    .finally(() => {
+        // Restaurar botón
+        submitText.textContent = 'Importar';
+        submitSpinner.classList.add('d-none');
+        submitBtn.disabled = false;
+    });
+});
+
+// Función para cargar colecciones (si es necesaria)
+function cargarColecciones() {
+    // Tu implementación actual...
+}
+</script>
+
+<style>
+#responseMessage .btn-close {
+    line-height: 1;
+    padding: 0.5rem;
+}
+</style>
+{% endblock %}
