@@ -35,4 +35,6 @@ urlpatterns = [
     path('crearRolNoSQL', views.crearRolNoSQL, name='crearRolNoSQL'),
     path('usuariosBDNoSQL', views.usuariosBDNoSQL, name='usuariosBDNoSQL'),
     path('crearUsuarioNoSQL', views.crearUsuarioNoSQL, name='crearUsuarioNoSQL'),
+    path('backupBDNoSQL', views.backupBDNoSQL, name='backupBDNoSQL'),
+    path('crearBackupNoSQL', views.crearBackupNoSQL, name='crearBackupNoSQL'),
 ]

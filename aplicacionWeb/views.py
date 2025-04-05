@@ -652,3 +652,59 @@ def crearUsuarioNoSQL(request):
         return JsonResponse({
             "error": "Método no permitido, se requiere POST."
         }, status=405)
+    
+def backupBDNoSQL(request):
+    try:
+        # Obtener las bases de datos mediante la función listabdNoSQL
+        bd = listabdNoSQL()
+        if isinstance(bd, dict) and "error" in bd:
+            # Si hubo un error, redirigir a una página de error con mensaje
+            return redirect('result_page', message=bd["error"])
+        # Renderizar la plantilla con los datos obtenidos
+        return render(request, 'pages/Formularios/backupsBDNoSQL.html', {'dbs': bd})
+    except Exception as e:
+        # Manejo de errores genéricos
+        return redirect('result_page', message=f'Error inesperado: {str(e)}')
+    
+def crearBackupNoSQL(request):
+    if request.method == 'POST':
+        # Obtener los datos del formulario
+        bd = request.POST.get('bd')
+        file = request.POST.get('file')
+
+        if not bd or not file:
+            return JsonResponse({
+                "error": "Todos los campos son requeridos (Base de datos, Carpeta)."
+            }, status=400)
+
+        try:
+            # Construir el payload en el formato requerido
+            payload = {
+                "dbName": bd,
+                "backupPath": file
+            }
+
+            # Enviar la solicitud POST al endpoint de MongoDB
+            response = requests.post(
+                f'{api}/create-backup',
+                json=payload,
+                headers={'Content-Type': 'application/json'}
+            )
+
+            if response.status_code == 200:
+                return JsonResponse(response.json(), status=200)
+            else:
+                return JsonResponse({
+                    "error": f"Error en la solicitud a MongoDB: {response.status_code}",
+                    "details": response.text
+                }, status=response.status_code)
+
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({
+                "error": "Excepción en la conexión con MongoDB",
+                "details": str(e)
+            }, status=500)
+    else:
+        return JsonResponse({
+            "error": "Método no permitido, se requiere POST."
+        }, status=405)
