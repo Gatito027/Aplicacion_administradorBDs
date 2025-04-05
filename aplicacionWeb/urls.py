@@ -37,4 +37,7 @@ urlpatterns = [
     path('crearUsuarioNoSQL', views.crearUsuarioNoSQL, name='crearUsuarioNoSQL'),
     path('backupBDNoSQL', views.backupBDNoSQL, name='backupBDNoSQL'),
     path('crearBackupNoSQL', views.crearBackupNoSQL, name='crearBackupNoSQL'),
+    path('exportarBDNoSQL', views.exportarBDNoSQL, name='exportarBDNoSQL'),
+    path('exportarEjecutarNoSQL', views.exportarEjecutarNoSQL, name='exportarEjecutarNoSQL'),
+    path('listaColeccionesNoSQL/<str:db_name>', views.listaColeccionesNoSQL, name='listaColeccionesNoSQL'),
 ]

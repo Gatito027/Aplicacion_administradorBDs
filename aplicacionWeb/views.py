@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect
 from django.db import connection
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+import os
+import tempfile
 import requests
 
 # Create your views here.
@@ -708,3 +710,120 @@ def crearBackupNoSQL(request):
         return JsonResponse({
             "error": "Método no permitido, se requiere POST."
         }, status=405)
+    
+def exportarBDNoSQL(request):
+    try:
+        # Obtener las bases de datos mediante la función listabdNoSQL
+        bd = listabdNoSQL()
+        if isinstance(bd, dict) and "error" in bd:
+            # Si hubo un error, redirigir a una página de error con mensaje
+            return redirect('result_page', message=bd["error"])
+        # Renderizar la plantilla con los datos obtenidos
+        return render(request, 'pages/Formularios/exportNoSQL.html', {'dbs': bd})
+    except Exception as e:
+        # Manejo de errores genéricos
+        return redirect('result_page', message=f'Error inesperado: {str(e)}')
+    
+def exportarEjecutarNoSQL(request):
+    if request.method == 'POST':
+        # Obtener los datos del formulario
+        bd = request.POST.get('bd')
+        colecciones = request.POST.get('colecciones')
+
+        if not bd:
+            return JsonResponse({
+                "success": False,
+                "error": "PARAMS_MISSING",
+                "message": "Todos los campos son requeridos (Base de datos)."
+            }, status=400)
+
+        try:
+            # Construir el payload en el formato requerido
+            payload = {
+                "dbName": bd,
+                "collection": colecciones
+            }
+
+            # Enviar la solicitud POST al endpoint de MongoDB
+            response = requests.post(
+                f'{api}/export-db',
+                json=payload,
+                headers={'Content-Type': 'application/json'},
+                stream=True  # Importante para manejar la descarga del archivo
+            )
+
+            if response.status_code == 200:
+                # Verificar si es una descarga de archivo (content-disposition)
+                if 'content-disposition' in response.headers:
+                    # Crear un archivo temporal para almacenar la respuesta
+                    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            if chunk:
+                                tmp_file.write(chunk)
+                        tmp_file_path = tmp_file.name
+
+                    # Leer el archivo temporal y crear respuesta HTTP
+                    with open(tmp_file_path, 'rb') as f:
+                        file_data = f.read()
+                    
+                    # Obtener el nombre del archivo del header
+                    content_disposition = response.headers['content-disposition']
+                    filename = content_disposition.split('filename=')[1].strip('"')
+                    
+                    # Eliminar el archivo temporal
+                    os.unlink(tmp_file_path)
+                    
+                    # Crear la respuesta con el archivo
+                    http_response = HttpResponse(file_data, content_type='application/json')
+                    http_response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                    return http_response
+                else:
+                    # Si no es un archivo, devolver el JSON normalmente
+                    return JsonResponse(response.json(), status=200)
+            else:
+                try:
+                    error_data = response.json()
+                    return JsonResponse({
+                        "success": False,
+                        "error": "EXPORT_FAILED",
+                        "message": f"Error en la exportación: {error_data.get('message', '')}",
+                        "details": error_data
+                    }, status=response.status_code)
+                except ValueError:
+                    return JsonResponse({
+                        "success": False,
+                        "error": "EXPORT_FAILED",
+                        "message": f"Error en la exportación: {response.status_code}",
+                        "details": response.text
+                    }, status=response.status_code)
+
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({
+                "success": False,
+                "error": "CONNECTION_ERROR",
+                "message": "Excepción en la conexión con MongoDB",
+                "details": str(e)
+            }, status=500)
+    else:
+        return JsonResponse({
+            "success": False,
+            "error": "METHOD_NOT_ALLOWED",
+            "message": "Método no permitido, se requiere POST."
+        }, status=405)
+
+def listaColeccionesNoSQL(request, db_name):
+    try:
+        # Crear el JSON con el dbName recibido desde el frontend
+        payload = {"dbName": db_name}
+        
+        # Realizar la solicitud a la API con el JSON
+        response = requests.get(f'{api}/list-collections', json=payload)  # Si la API espera un query param
+        
+        # Verificar si la solicitud fue exitosa
+        if response.status_code == 200:
+            return JsonResponse(response.json(), safe=False)  # Devolver un JSON válido
+        else:
+            return JsonResponse({"error": f"Error en la solicitud: {response.status_code}"}, status=response.status_code)
+
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({"error": str(e)}, status=500)
